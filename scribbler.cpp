@@ -1,9 +1,10 @@
 
 #include "scribbler.h"
 #include <QtWidgets>
+#include <QtMath>
 
-MouseEvent::MouseEvent(int _action, QPointF _pos, quint64 _time)
-    :action(_action),pos(_pos),time(_time) { }
+MouseEvent::MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast)
+    :action(_action),pos(_pos),time(_time), distanceToLast(_distanceToLast) { }
 
 MouseEvent::MouseEvent(){}
 
@@ -78,7 +79,7 @@ void Scribbler::mousePressEvent(QMouseEvent *evt) {
     QGraphicsEllipseItem *currentDot = drawDot(p);
 
     if (capturing){
-        events << MouseEvent(MouseEvent::Press, p, evt->timestamp());
+        events << MouseEvent(MouseEvent::Press, p, evt->timestamp(), 0);
         tabDots.append(currentDot);
     }
 }
@@ -87,6 +88,12 @@ void Scribbler::mouseMoveEvent(QMouseEvent *evt) {
     QGraphicsView::mouseMoveEvent(evt);
 
     QPointF p = mapToScene(evt->pos());
+    double x1 = lastPoint.x();
+    double y1 = lastPoint.y();
+    double x2 = p.x();
+    double y2 = p.y();
+
+    double distance = qSqrt((qPow((x2 - x1), 2)) + (qPow((y2 - y1), 2)));
 
     QGraphicsLineItem *currentLine = drawLine(p);
 
@@ -100,7 +107,7 @@ void Scribbler::mouseMoveEvent(QMouseEvent *evt) {
     lastPoint = p;
 
     if (capturing){
-        events << MouseEvent(MouseEvent::Move, p, evt->timestamp());
+        events << MouseEvent(MouseEvent::Move, p, evt->timestamp(), distance);
         tabDots.append(currentDot);
         tabLines.append(currentLine);
     }
@@ -111,7 +118,7 @@ void Scribbler::mouseReleaseEvent(QMouseEvent *evt) {
     QPointF p = mapToScene(evt->pos());
 
     if (capturing){
-        events << MouseEvent(MouseEvent::Release, p, evt->timestamp());
+        events << MouseEvent(MouseEvent::Release, p, evt->timestamp(), 0);
     }
 }
 

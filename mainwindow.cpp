@@ -117,11 +117,11 @@ void MainWindow::addTab(QList<MouseEvent> _eventsList){
     tab->setHidden(false);
     tab->setCurrentIndex(tab->count() - 1);
 
-    currentTable->setColumnCount(3);
+    currentTable->setColumnCount(4);
     currentTable->setRowCount(_eventsList.length());
 
     QStringList headers;
-    headers << "Action" << "Position" << "Time";
+    headers << "Action" << "Position" << "Time" << "Distance";
     currentTable->setHorizontalHeaderLabels(headers);
 
     for (int i = 0; i < _eventsList.length(); ++i){
@@ -137,6 +137,9 @@ void MainWindow::addTab(QList<MouseEvent> _eventsList){
         timeItem->setData(Qt::DisplayRole, _eventsList[i].time);
         currentTable->setItem(i, 2, timeItem);
 
+        QTableWidgetItem *distanceItem = new QTableWidgetItem();
+        distanceItem->setData(Qt::DisplayRole, _eventsList[i].distanceToLast);
+        currentTable->setItem(i, 3, distanceItem);
     }
 
     setSelectedTab();

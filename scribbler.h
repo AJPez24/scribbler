@@ -19,9 +19,10 @@ public:
     int action;
     QPointF pos;
     quint64 time;
+    double distanceToLast;
 
     MouseEvent();
-    MouseEvent(int _action, QPointF _pos, quint64 _time);
+    MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast);
 
     QString getActionName();
     QString getPositionString();

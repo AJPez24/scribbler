@@ -230,6 +230,8 @@ void Scribbler::drawLoadedFile(QList<QList<MouseEvent>> _eventsListList){
     for (int i = 0; i < _eventsListList.length(); ++i){
         drawEventsTab(_eventsListList[i]);
     }
+
+    changeOpacity(_eventsListList.length()-1);
 }
 
 

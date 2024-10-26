@@ -243,8 +243,6 @@ void Scribbler::drawLoadedFile(QList<QList<MouseEvent>> _eventsListList){
 
 
 void Scribbler::changeOpacity(int tab){
-    qDebug() << "Changing opacity on all exept: " << tab;
-    qDebug() << itemsByTab.length();
     if (itemsByTab.length() != 0){
         itemsByTab[tab]->setOpacity(1);
         for (int i = 0; i < itemsByTab.length(); ++i){

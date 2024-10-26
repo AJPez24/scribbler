@@ -32,8 +32,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     //File Menu
     QAction *resetScribbleAct = new QAction("Reset Scribble");
-    connect(resetScribbleAct, &QAction::triggered, this, &MainWindow::resetMainSlot);
     connect(resetScribbleAct, &QAction::triggered, scribbler, &Scribbler::clearScribbler);
+    connect(resetScribbleAct, &QAction::triggered, this, &MainWindow::resetMainSlot);
     resetScribbleAct->setShortcut(Qt::CTRL | Qt::Key_R);
 
 
@@ -164,7 +164,7 @@ void MainWindow::saveFileSlot(){
 
     out << _eventsListList;
 
-
+    qDebug() << _eventsListList[0][3].distanceToLast;
 
 }
 
@@ -190,6 +190,7 @@ void MainWindow::openFileSlot(){
 
         QList<QList<MouseEvent>> inListList;
 
+
         in >> inListList;
 
         for (int i = 0; i < inListList.length(); ++i){
@@ -201,7 +202,6 @@ void MainWindow::openFileSlot(){
 
 void MainWindow::setSelectedTab(){
     selectedTab = tab->currentIndex();
-    qDebug() << selectedTab;
     scribbler->changeOpacity(selectedTab);
 }
 

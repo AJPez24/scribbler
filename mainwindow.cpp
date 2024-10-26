@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     QAction *openFileAct = new QAction("Open File");
+    connect(openFileAct, &QAction::triggered, scribbler, &Scribbler::clearScribbler);
     connect(openFileAct, &QAction::triggered, this, &MainWindow::openFileSlot);
     openFileAct->setShortcut(Qt::CTRL | Qt::Key_O);
 

@@ -136,8 +136,10 @@ void Scribbler::clearScribbler(){
     events.clear();
     linesToDraw.clear();
     tabDots.clear();
+    tabLines.clear();
     eventsListList.clear();
     capturing = false;
+    itemsByTab.clear();
 }
 
 void Scribbler::startCapture(){

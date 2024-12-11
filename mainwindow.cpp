@@ -1,12 +1,12 @@
 #include "mainwindow.h"
 
-#include "scribbler.h"
 #include <QtWidgets>
-
+#include "scribbler.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), tabCount(0){
-
+    : QMainWindow(parent)
+    , tabCount(0)
+{
     QWidget *center = new QWidget();
     setCentralWidget(center);
 
@@ -15,11 +15,9 @@ MainWindow::MainWindow(QWidget *parent)
     scribbler = new Scribbler();
     mainLayout->addWidget(scribbler, 1);
 
-
     tab = new QTabWidget();
     mainLayout->addWidget(tab, 1);
     tab->setHidden(true);
-
 
     connect(tab, &QTabWidget::currentChanged, this, &MainWindow::setSelectedTab);
 
@@ -38,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     saveFileAct->setShortcut(Qt::CTRL | Qt::Key_S);
 
     QAction *openFileAct = new QAction("&Open File");
+
     connect(openFileAct, &QAction::triggered, scribbler, &Scribbler::clearScribbler);
     connect(openFileAct, &QAction::triggered, this, &MainWindow::openFileSlot);
     openFileAct->setShortcut(Qt::CTRL | Qt::Key_O);
@@ -47,7 +46,6 @@ MainWindow::MainWindow(QWidget *parent)
     fileMenu->addAction(resetScribbleAct);
     fileMenu->addAction(openFileAct);
     fileMenu->addAction(saveFileAct);
-
 
     //Capture Menu
     QAction *startCaptureAct = new QAction("Start &Capture");
@@ -81,7 +79,8 @@ MainWindow::MainWindow(QWidget *parent)
     viewMenu->addAction(dotsOnlyAct);
 }
 
-MainWindow::~MainWindow() {
+MainWindow::~MainWindow()
+{
     QSettings settings("Pezza Productions", "Scribbler Midterm");
     settings.setValue("lastDir", lastDir);
 }
@@ -111,7 +110,7 @@ void MainWindow::addTab(QList<MouseEvent> _eventsList){
     headers << "Action" << "Position" << "Time" << "Distance";
     currentTable->setHorizontalHeaderLabels(headers);
 
-    for (int i = 0; i < _eventsList.length(); ++i){
+    for (int i = 0; i < _eventsList.length(); ++i) {
         QTableWidgetItem *nameItem = new QTableWidgetItem();
         nameItem->setData(Qt::DisplayRole, _eventsList[i].getActionName());
         currentTable->setItem(i, 0, nameItem);
@@ -149,7 +148,7 @@ void MainWindow::saveFileSlot(){
 
     QFile outFile(outName);
 
-    if (!outFile.open(QIODevice::WriteOnly | QIODevice::Truncate)){
+    if (!outFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         QMessageBox::information(this, "Error", QString("Can't write to file \"%1\"").arg(outName));
         return;
     }
@@ -166,19 +165,18 @@ void MainWindow::openFileSlot(){
 
     loadFileName = QFileDialog::getOpenFileName(this, "Open File", lastDir);
     QFile inFile(loadFileName);
-    if (loadFileName.isEmpty()) return;
+    if (loadFileName.isEmpty())
+        return;
 
     lastDir = QFileInfo(loadFileName).absolutePath();
 
-
-    if(!inFile.open(QIODevice::ReadOnly)){
+    if (!inFile.open(QIODevice::ReadOnly)) {
         QMessageBox::information(this, "Error", QString("Can't open file \"%1\"").arg(loadFileName));
         return;
     }
 
-    else{
-
-        QDataStream in (&inFile);
+    else {
+        QDataStream in(&inFile);
 
         in >> eventsListList;
 
@@ -189,12 +187,14 @@ void MainWindow::openFileSlot(){
     }
 }
 
-void MainWindow::setSelectedTab(){
+void MainWindow::setSelectedTab()
+{
     selectedTab = tab->currentIndex();
     scribbler->changeOpacity(selectedTab);
 }
 
-int MainWindow::getSelectedTab(){
+int MainWindow::getSelectedTab()
+{
     return selectedTab;
 }
 
@@ -229,38 +229,3 @@ void MainWindow::changeSelectedRows(){
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

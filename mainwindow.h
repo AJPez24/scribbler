@@ -1,15 +1,13 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
 #include <QGraphicsScene>
-
+#include <QMainWindow>
 
 #include "scribbler.h"
 
 class QTabWidget;
 class QTableWidget;
-
 
 class MainWindow : public QMainWindow
 {
@@ -29,13 +27,11 @@ class MainWindow : public QMainWindow
     void changeSelectedRows();
 
     QList<QList<MouseEvent>> eventsListList;
-
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
     int getSelectedTab();
-
 
 public slots:
     void resetMainSlot();

@@ -26,28 +26,21 @@ MainWindow::MainWindow(QWidget *parent)
     QSettings settings("Pezza Productions", "Scribbler Midterm");
     lastDir = settings.value("lastDir", "").toString();
 
-
-
     //=============Menue Bar
 
     //File Menu
-    QAction *resetScribbleAct = new QAction("Reset Scribble");
-    connect(resetScribbleAct, &QAction::triggered, scribbler, &Scribbler::clearScribbler);
+    QAction *resetScribbleAct = new QAction("&Reset Scribble");
     connect(resetScribbleAct, &QAction::triggered, this, &MainWindow::resetMainSlot);
     resetScribbleAct->setShortcut(Qt::CTRL | Qt::Key_R);
 
-
-    QAction *saveFileAct = new QAction("Save File");
+    QAction *saveFileAct = new QAction("&Save File");
     connect(saveFileAct, &QAction::triggered, this, &MainWindow::saveFileSlot);
     saveFileAct->setShortcut(Qt::CTRL | Qt::Key_S);
 
-
-    QAction *openFileAct = new QAction("Open File");
+    QAction *openFileAct = new QAction("&Open File");
     connect(openFileAct, &QAction::triggered, scribbler, &Scribbler::clearScribbler);
     connect(openFileAct, &QAction::triggered, this, &MainWindow::openFileSlot);
     openFileAct->setShortcut(Qt::CTRL | Qt::Key_O);
-
-
 
     QMenu *fileMenu = new QMenu("&File");
     menuBar()->addMenu(fileMenu);
@@ -56,34 +49,29 @@ MainWindow::MainWindow(QWidget *parent)
     fileMenu->addAction(saveFileAct);
 
 
-
-
     //Capture Menu
-    QAction *startCaptureAct = new QAction("Start Capture");
+    QAction *startCaptureAct = new QAction("Start &Capture");
     connect(startCaptureAct, &QAction::triggered, scribbler, &Scribbler::startCapture);
     startCaptureAct->setShortcut(Qt::CTRL | Qt::Key_C);
 
-    QAction *endCaptureAct = new QAction("End Capture");
+    QAction *endCaptureAct = new QAction("&End Capture");
     connect(endCaptureAct, &QAction::triggered, scribbler, &Scribbler::sendEventData);
     endCaptureAct->setShortcut(Qt::CTRL | Qt::Key_E);
 
-    connect(scribbler, &Scribbler::emitEventData, this, &MainWindow::addTab);
+    connect(scribbler, &Scribbler::emitEventData, this, &MainWindow::newCaptureData);
 
-    QMenu *captureMenu = new QMenu("&Capture");
+    QMenu *captureMenu = new QMenu("Capture");
     menuBar()->addMenu(captureMenu);
     captureMenu->addAction(startCaptureAct);
     captureMenu->addAction(endCaptureAct);
 
-
-
-
     //View Menu
 
-    QAction *lineSegmentsAct = new QAction("Lines Only");
+    QAction *lineSegmentsAct = new QAction("&Lines Only");
     connect(lineSegmentsAct, &QAction::triggered, scribbler, &Scribbler::setLineSegments);
     lineSegmentsAct->setShortcut(Qt::CTRL | Qt::Key_L);
 
-    QAction *dotsOnlyAct = new QAction("Dots Only");
+    QAction *dotsOnlyAct = new QAction("&Dots Only");
     connect(dotsOnlyAct, &QAction::triggered, scribbler, &Scribbler::setDotsOnly);
     dotsOnlyAct->setShortcut(Qt::CTRL | Qt::Key_D);
 
@@ -91,10 +79,6 @@ MainWindow::MainWindow(QWidget *parent)
     menuBar()->addMenu(viewMenu);
     viewMenu->addAction(lineSegmentsAct);
     viewMenu->addAction(dotsOnlyAct);
-
-
-
-
 }
 
 MainWindow::~MainWindow() {
@@ -104,12 +88,14 @@ MainWindow::~MainWindow() {
 
 //File Menu
 void MainWindow::resetMainSlot(){
+    scribbler->clearScribbler();
+
+    eventsListList.clear();
     tab->clear();
     tab->setHidden(true);
     tabCount = 0;
+    tables.clear();
 }
-
-
 
 void MainWindow::addTab(QList<MouseEvent> _eventsList){
     QTableWidget *currentTable = new QTableWidget();
@@ -119,6 +105,7 @@ void MainWindow::addTab(QList<MouseEvent> _eventsList){
 
     currentTable->setColumnCount(4);
     currentTable->setRowCount(_eventsList.length());
+    currentTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     QStringList headers;
     headers << "Action" << "Position" << "Time" << "Distance";
@@ -142,13 +129,23 @@ void MainWindow::addTab(QList<MouseEvent> _eventsList){
         currentTable->setItem(i, 3, distanceItem);
     }
 
-    setSelectedTab();
+    tables.append(currentTable);
 
+    connect(currentTable, &QTableWidget::itemSelectionChanged, this, &MainWindow::changeSelectedRows);
+
+    setSelectedTab();
 }
 
+void MainWindow::newCaptureData(QList<MouseEvent> _eventsList){
+    eventsListList.append(_eventsList);
+    addTab(_eventsList);
+}
 
 void MainWindow::saveFileSlot(){
     QString outName = QFileDialog::getSaveFileName(this, "Save", lastDir);
+    if (outName.isEmpty()){
+        return;
+    }
 
     QFile outFile(outName);
 
@@ -157,17 +154,12 @@ void MainWindow::saveFileSlot(){
         return;
     }
 
+    lastDir = QFileInfo(outName).absolutePath();
+
     QDataStream out (&outFile);
 
-    QList<QList<MouseEvent>> _eventsListList;
-    _eventsListList = scribbler->getEventsListList();
-
-    out << _eventsListList;
-
-    qDebug() << _eventsListList[0][3].distanceToLast;
-
+    out << eventsListList;
 }
-
 
 void MainWindow::openFileSlot(){
     resetMainSlot();
@@ -188,15 +180,12 @@ void MainWindow::openFileSlot(){
 
         QDataStream in (&inFile);
 
-        QList<QList<MouseEvent>> inListList;
+        in >> eventsListList;
 
-
-        in >> inListList;
-
-        for (int i = 0; i < inListList.length(); ++i){
-            addTab(inListList[i]);
+        for (int i = 0; i < eventsListList.length(); ++i){
+            scribbler->drawEventsTab(eventsListList[i]);
+            addTab(eventsListList[i]);
         }
-        scribbler->drawLoadedFile(inListList);
     }
 }
 
@@ -207,6 +196,38 @@ void MainWindow::setSelectedTab(){
 
 int MainWindow::getSelectedTab(){
     return selectedTab;
+}
+
+void MainWindow::changeSelectedRows(){
+    selectedTab = tab->currentIndex();
+
+    for (int i = 0; i < eventsListList.length(); ++i){
+        for (int j = 0; j < eventsListList[i].length(); ++j){
+            if (eventsListList[i][j].line){
+                eventsListList[i][j].line->setPen(QPen(Qt::black, 4.0, Qt::SolidLine, Qt::FlatCap));
+            }
+
+            if (eventsListList[i][j].dot){
+                eventsListList[i][j].dot->setBrush(Qt::black);
+            }
+        }
+    }
+
+
+    QList<QTableWidgetSelectionRange> ranges = tables[selectedTab]->selectedRanges();
+
+    for (int i = 0; i < ranges.length(); ++i){
+        for (int j = ranges[i].topRow(); j <= ranges[i].bottomRow(); ++j){
+            if (eventsListList[selectedTab][j].line){
+                eventsListList[selectedTab][j].line->setPen(QPen(Qt::red, 4.0, Qt::SolidLine, Qt::FlatCap)); //magic number
+            }
+
+            if (eventsListList[selectedTab][j].dot){
+                eventsListList[selectedTab][j].dot->setBrush(Qt::red);
+            }
+
+        }
+    }
 }
 
 

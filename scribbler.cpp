@@ -3,8 +3,8 @@
 #include <QtWidgets>
 #include <QtMath>
 
-MouseEvent::MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast)
-    :action(_action),pos(_pos),time(_time), distanceToLast(_distanceToLast) { }
+MouseEvent::MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast, QGraphicsLineItem *_line, QGraphicsEllipseItem *_dot)
+    :action(_action), pos(_pos), time(_time), distanceToLast(_distanceToLast), line(_line), dot(_dot) { }
 
 MouseEvent::MouseEvent(){}
 
@@ -29,11 +29,11 @@ QString MouseEvent::getPositionString(){
 }
 
 QDataStream &operator<<(QDataStream &out, const MouseEvent &evt) {
-    return out << evt.action << evt.pos << evt.time;
+    return out << evt.action << evt.pos << evt.time <<evt.distanceToLast;
 }
 
 QDataStream &operator>>(QDataStream &in, MouseEvent &evt) {
-    return in >> evt.action >> evt.pos >> evt.time;
+    return in >> evt.action >> evt.pos >> evt.time >> evt.distanceToLast;
 }
 
 //========== Scribbler
@@ -79,7 +79,7 @@ void Scribbler::mousePressEvent(QMouseEvent *evt) {
     QGraphicsEllipseItem *currentDot = drawDot(p);
 
     if (capturing){
-        events << MouseEvent(MouseEvent::Press, p, evt->timestamp(), 0);
+        events << MouseEvent(MouseEvent::Press, p, evt->timestamp(), 0, nullptr, currentDot);
         tabDots.append(currentDot);
     }
 }
@@ -107,7 +107,7 @@ void Scribbler::mouseMoveEvent(QMouseEvent *evt) {
     lastPoint = p;
 
     if (capturing){
-        events << MouseEvent(MouseEvent::Move, p, evt->timestamp(), distance);
+        events << MouseEvent(MouseEvent::Move, p, evt->timestamp(), distance, currentLine, currentDot);
         tabDots.append(currentDot);
         tabLines.append(currentLine);
     }
@@ -118,7 +118,7 @@ void Scribbler::mouseReleaseEvent(QMouseEvent *evt) {
     QPointF p = mapToScene(evt->pos());
 
     if (capturing){
-        events << MouseEvent(MouseEvent::Release, p, evt->timestamp(), 0);
+        events << MouseEvent(MouseEvent::Release, p, evt->timestamp(), 0, nullptr, nullptr);
     }
 }
 
@@ -144,7 +144,6 @@ void Scribbler::clearScribbler(){
     linesToDraw.clear();
     tabDots.clear();
     tabLines.clear();
-    eventsListList.clear();
     capturing = false;
     itemsByTab.clear();
 }
@@ -185,27 +184,23 @@ void Scribbler::sendEventData(){
     makeItemGroups();
 
     emit emitEventData(events);
-    eventsListList.append(events);
     events.clear();
     capturing = false;
 
 }
 
 
-
-
-QList<QList<MouseEvent>>  Scribbler::getEventsListList(){
-    return eventsListList;
-}
-
-
-void Scribbler::drawEventsTab(QList<MouseEvent> _eventsList){
+void Scribbler::drawEventsTab(QList<MouseEvent> &_eventsList){    //Set Lines and dots
     for (int i = 0; i < _eventsList.length(); ++i){  
         if (_eventsList[i].action == 0){
             QPointF p = _eventsList[i].pos;
             lastPoint = p;
 
-            tabDots.append(drawDot(p));
+            QGraphicsEllipseItem *currentDot = drawDot(p);
+            tabDots.append(currentDot);
+
+            _eventsList[i].dot = currentDot;
+            _eventsList[i].line = nullptr;
         }
 
         else if (_eventsList[i].action == 1){
@@ -219,28 +214,23 @@ void Scribbler::drawEventsTab(QList<MouseEvent> _eventsList){
 
             tabLines.append(currentLine);
 
-            tabDots.append(drawDot(p));
+            QGraphicsEllipseItem *currentDot = drawDot(p);
+            tabDots.append(currentDot);
+
+            _eventsList[i].dot = currentDot;
+            _eventsList[i].line = currentLine;
 
             lastPoint = p;
 
         }
+
+        else if (_eventsList[i].action == 2){
+            _eventsList[i].dot = nullptr;
+            _eventsList[i].line = nullptr;
+        }
     }
     makeItemGroups();
 }
-
-
-
-
-void Scribbler::drawLoadedFile(QList<QList<MouseEvent>> _eventsListList){
-    clearScribbler();
-
-    for (int i = 0; i < _eventsListList.length(); ++i){
-        drawEventsTab(_eventsListList[i]);
-    }
-
-    changeOpacity(_eventsListList.length()-1);
-}
-
 
 void Scribbler::changeOpacity(int tab){
     if (itemsByTab.length() != 0){

@@ -21,8 +21,11 @@ public:
     quint64 time;
     double distanceToLast;
 
+    QGraphicsLineItem *line;
+    QGraphicsEllipseItem *dot;
+
     MouseEvent();
-    MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast);
+    MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast, QGraphicsLineItem *_line, QGraphicsEllipseItem *_dot);
 
     QString getActionName();
     QString getPositionString();
@@ -41,7 +44,6 @@ class Scribbler : public QGraphicsView
 
 
     QList<MouseEvent> events;
-    QList<QList<MouseEvent>> eventsListList;
 
     QList<QGraphicsLineItem*> linesToDraw;
 
@@ -50,24 +52,16 @@ class Scribbler : public QGraphicsView
 
     QList<QGraphicsItemGroup*> itemsByTab;
 
-
-
-
     QGraphicsEllipseItem* drawDot(QPointF _p);
     QGraphicsLineItem* drawLine(QPointF _p);
 
-
-    void drawEventsTab(QList<MouseEvent> _eventsList);
     void makeItemGroups();
-
-
 
     Q_OBJECT
 public:
     Scribbler();
 
-    void drawLoadedFile(QList<QList<MouseEvent>> _eventsListList);
-    QList<QList<MouseEvent>> getEventsListList();
+    void drawEventsTab(QList<MouseEvent> &_eventsList);
 
     void changeOpacity(int tab);
 
@@ -81,12 +75,9 @@ public slots:
     void startCapture();
     void sendEventData();
 
-
     void setDotsOnly();
     void setLineSegments();
     void clearScribbler();
-
-
 
 signals:
     void emitEventData(QList<MouseEvent>& mouseEventsList);

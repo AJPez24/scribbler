@@ -19,13 +19,16 @@ class MainWindow : public QMainWindow
     QTabWidget *tab;
     int tabCount;
     int selectedTab;
+    QList<QTableWidget*> tables;
 
     QString lastDir;
     QString loadFileName;
 
     QTableWidget makeTable(QList<MouseEvent> _eventsList);
     void setSelectedTab();
+    void changeSelectedRows();
 
+    QList<QList<MouseEvent>> eventsListList;
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -41,6 +44,7 @@ public slots:
     void openFileSlot();
 
     void addTab(QList<MouseEvent> _eventsList);
+    void newCaptureData(QList<MouseEvent> _eventsList);
 };
 
 #endif // MAINWINDOW_H

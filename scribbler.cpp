@@ -3,31 +3,24 @@
 #include <QtMath>
 #include <QtWidgets>
 
-MouseEvent::MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast)
-    : action(_action)
-    , pos(_pos)
-    , time(_time)
-    , distanceToLast(_distanceToLast)
-    , line(nullptr)
-    , dot(nullptr)
-{}
+MouseEvent::MouseEvent(int _action, QPointF _pos, quint64 _time, double _distanceToLast, QGraphicsLineItem *_line, QGraphicsEllipseItem *_dot)
+    :action(_action), pos(_pos), time(_time), distanceToLast(_distanceToLast), line(_line), dot(_dot) { }
 
-MouseEvent::MouseEvent():line(nullptr),dot(nullptr) {}
+MouseEvent::MouseEvent(){}
 
-QString MouseEvent::getActionName()
-{
-    switch (action) {
-    case 0:
-        return QString("Press");
-        break;
-    case 1:
-        return QString("Move");
-        break;
-    case 2:
-        return QString("Release");
-        break;
-    default:
-        return QString("Error");
+QString MouseEvent::getActionName(){
+    switch (action){
+        case 0:
+            return QString("Press");
+            break;
+        case 1:
+            return QString("Move");
+            break;
+        case 2:
+            return QString("Release");
+            break;
+        default:
+            return QString("Error");
     }
 }
 
@@ -36,14 +29,12 @@ QString MouseEvent::getPositionString()
     return QString("(%1, %2)").arg(pos.x()).arg(pos.y());
 }
 
-QDataStream &operator<<(QDataStream &out, const MouseEvent &evt)
-{
-    return out << evt.action << evt.pos << evt.time; //!!! Don't save or load pointers!  Set when you make/draw a MouseEvent
+QDataStream &operator<<(QDataStream &out, const MouseEvent &evt) {
+    return out << evt.action << evt.pos << evt.time <<evt.distanceToLast;
 }
 
-QDataStream &operator>>(QDataStream &in, MouseEvent &evt)
-{
-    return in >> evt.action >> evt.pos >> evt.time;
+QDataStream &operator>>(QDataStream &in, MouseEvent &evt) {
+    return in >> evt.action >> evt.pos >> evt.time >> evt.distanceToLast;
 }
 
 //========== Scribbler
@@ -91,8 +82,8 @@ void Scribbler::mousePressEvent(QMouseEvent *evt)
 
     QGraphicsEllipseItem *currentDot = drawDot(p); // Store & set in MouseEvent
 
-    if (capturing) {
-        events << MouseEvent(MouseEvent::Press, p, evt->timestamp(), 0);
+    if (capturing){
+        events << MouseEvent(MouseEvent::Press, p, evt->timestamp(), 0, nullptr, currentDot);
         tabDots.append(currentDot);
     }
 }
@@ -120,8 +111,8 @@ void Scribbler::mouseMoveEvent(QMouseEvent *evt)
 
     lastPoint = p;
 
-    if (capturing) {
-        events << MouseEvent(MouseEvent::Move, p, evt->timestamp(), distance);
+    if (capturing){
+        events << MouseEvent(MouseEvent::Move, p, evt->timestamp(), distance, currentLine, currentDot);
         tabDots.append(currentDot);
         tabLines.append(currentLine);
     }
@@ -132,8 +123,8 @@ void Scribbler::mouseReleaseEvent(QMouseEvent *evt)
     QGraphicsView::mouseReleaseEvent(evt);
     QPointF p = mapToScene(evt->pos());
 
-    if (capturing) {
-        events << MouseEvent(MouseEvent::Release, p, evt->timestamp(), 0);
+    if (capturing){
+        events << MouseEvent(MouseEvent::Release, p, evt->timestamp(), 0, nullptr, nullptr);
     }
 }
 
@@ -160,7 +151,6 @@ void Scribbler::clearScribbler()
     linesToDraw.clear();
     tabDots.clear();
     tabLines.clear();
-    eventsListList.clear();
     capturing = false;
     itemsByTab.clear();
 }
@@ -200,24 +190,21 @@ void Scribbler::sendEventData()
     makeItemGroups();
 
     emit emitEventData(events);
-    eventsListList.append(events);
     events.clear();
     capturing = false;
 }
 
-QList<QList<MouseEvent>> Scribbler::getEventsListList()
-{
-    return eventsListList;
-}
-
-void Scribbler::drawEventsTab(QList<MouseEvent> &_eventsList)
-{
-    for (int i = 0; i < _eventsList.length(); ++i) {
-        if (_eventsList[i].action == 0) {
+void Scribbler::drawEventsTab(QList<MouseEvent> &_eventsList){    //Set Lines and dots
+    for (int i = 0; i < _eventsList.length(); ++i){  
+        if (_eventsList[i].action == 0){
             QPointF p = _eventsList[i].pos;
             lastPoint = p;
 
-            tabDots.append(_eventsList[i].dot = drawDot(p));
+            QGraphicsEllipseItem *currentDot = drawDot(p);
+            tabDots.append(currentDot);
+
+            _eventsList[i].dot = currentDot;
+            _eventsList[i].line = nullptr;
         }
 
         else if (_eventsList[i].action == 1) {
@@ -231,28 +218,26 @@ void Scribbler::drawEventsTab(QList<MouseEvent> &_eventsList)
 
             tabLines.append(currentLine);
 
-            tabDots.append(drawDot(p)); // !!!
+            QGraphicsEllipseItem *currentDot = drawDot(p);
+            tabDots.append(currentDot);
+
+            _eventsList[i].dot = currentDot;
+            _eventsList[i].line = currentLine;
 
             lastPoint = p;
+        }
+
+        else if (_eventsList[i].action == 2){
+            _eventsList[i].dot = nullptr;
+            _eventsList[i].line = nullptr;
         }
     }
     makeItemGroups();
 }
 
-void Scribbler::drawLoadedFile(QList<QList<MouseEvent>> _eventsListList)
-{
-    clearScribbler();
+void Scribbler::changeOpacity(int tab){
+    if (itemsByTab.length() != 0){
 
-    for (int i = 0; i < _eventsListList.length(); ++i) {
-        drawEventsTab(_eventsListList[i]);
-    }
-
-    changeOpacity(_eventsListList.length() - 1);
-}
-
-void Scribbler::changeOpacity(int tab)
-{
-    if (itemsByTab.length() != 0) {
         itemsByTab[tab]->setOpacity(1);
         for (int i = 0; i < itemsByTab.length(); ++i) {
             if (i != tab) {
